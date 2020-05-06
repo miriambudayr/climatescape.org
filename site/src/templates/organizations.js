@@ -14,23 +14,26 @@ import SEO from "../components/seo"
 import CategoryList from "../components/CategoryList"
 import { GetFavorites, indexFavoritesData } from "../components/FavoriteButton"
 
-function OrganizationsTemplate({
-  data,
-  pageContext: { categoryId, categoryName, categoryCounts },
-}) {
-  const [filter, setFilter, applyFilter] = useOrganizationFilterState()
-
-  const { loading: authLoading, user } = useAuth0()
-
-  const [
-    getFavorites,
-    { data: favoritesData, error: favoritesError },
-  ] = useLazyQuery(GetFavorites, {
+export function getFavoritesLazy(user) {
+  return useLazyQuery(GetFavorites, {
     variables: {
       loggedIn: !!user,
       userId: user?.sub,
     },
   })
+}
+
+function OrganizationsTemplate({
+  data,
+  pageContext: { categoryId, categoryName, categoryCounts },
+}) {
+  const [filter, setFilter, applyFilter] = useOrganizationFilterState()
+  const { loading: authLoading, user } = useAuth0()
+
+  const [
+    getFavorites,
+    { data: favoritesData, error: favoritesError },
+  ] = getFavoritesLazy(user)
 
   if (favoritesError) console.error(favoritesError)
 

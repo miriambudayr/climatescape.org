@@ -1,7 +1,10 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { graphql } from "gatsby"
 import flatMap from "lodash/flatMap"
 
+import { useAuth0 } from "../components/Auth0Provider"
+import { getFavoritesLazy } from "../templates/organizations"
+import { indexFavoritesData } from "../components/FavoriteButton"
 import {
   transformOrganizations,
   transformCapitalTypes,
@@ -24,6 +27,18 @@ const CapitalTemplate = ({
   pageContext: { activeTypeId },
 }) => {
   const [filter, setFilter, applyFilter] = useOrganizationFilterState()
+  const { loading: authLoading, user } = useAuth0()
+
+  const [
+    getFavorites,
+    { data: favoritesData, error: favoritesError },
+  ] = getFavoritesLazy(user)
+
+  if (favoritesError) console.error(favoritesError)
+
+  useEffect(() => {
+    if (!authLoading) getFavorites()
+  }, [authLoading])
 
   const capitalTypes = transformCapitalTypes(capitalTypeNodes)
   const activeType = capitalTypes.find(({ id }) => id === activeTypeId)
@@ -40,7 +55,15 @@ const CapitalTemplate = ({
     organizationNodes = []
   }
 
-  const allOrganizations = transformOrganizations(organizationNodes)
+  const favorites = indexFavoritesData(favoritesData)
+
+  const allOrganizations = transformOrganizations(
+    organizationNodes,
+    (raw, org) => ({
+      ...org,
+      favorite: favorites[org.recordId],
+    })
+  )
   const organizations = applyFilter(allOrganizations)
 
   const { capitalAddFormUrl } = site.siteMetadata
